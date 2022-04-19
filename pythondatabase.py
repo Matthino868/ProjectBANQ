@@ -1,20 +1,4 @@
-import mysql.connector
-
-mydb = mysql.connector.connect(
-    host="145.24.222.71",
-    database="test_database",
-    user="ATMuser1",
-    password="Password01!",
-    get_warnings =True
-)
-naam = "Arthur"
-# print(mydb)
-mycursor = mydb.cursor()
-
-mycursor.execute("select naam,balans from test_tabel where naam = '"+ naam +"';")
-data = mycursor.fetchall()
-print("===============================================")
-print(data[0][0] + " heeft " + str(data[0][1]) + " op zijn rekening")
+[0][1]) + " op zijn rekening")
 print("===============================================")
 
 temp = data[0][1] + 50
