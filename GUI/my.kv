@@ -1,5 +1,7 @@
 #maak de schermen aan in de manager
 <SchermManagement>
+    InlogScherm:
+        name: 'InlogScherm'
     HoofdScherm:
         name: 'HoofdScherm'
     SaldoScherm:
@@ -16,6 +18,41 @@
     font_size: 32
 
 #na elke <xxx> kan je een scherm designen
+<InlogScherm>:
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    BoxLayout:
+        orientation: 'vertical'
+        size: root.width, root.height
+
+        spacing: 5
+
+        Label:
+            text: "Inloggen"
+            font_size: 32
+            color: (0, 0, 0, 1)
+
+        TextInput:
+            id: input1
+            hint_text:'Enter name'
+            font_size: 32
+            size_hint: (0.5, 0.8)
+
+        TextInput:
+            id: input2
+            hint_text:'Enter pin'
+            font_size: 32
+            size_hint: (0.5, 0.8)
+
+        Button:
+            text:"OK"
+            font_size: 32
+            on_release: app.checkPin(input1.text, input2.text)
+
 <HoofdScherm>:
     canvas.before:
         Rectangle:

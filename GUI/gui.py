@@ -23,6 +23,9 @@ mydb = mysql.connector.connect(
 )
 
 #maak alle schermen aan
+class InlogScherm(Screen):
+    pass
+
 class HoofdScherm(Screen):
     pass
 
@@ -66,10 +69,17 @@ class MyApp(App):
         mycursor.execute(sql_query, (SaldoAf, naam,))
         mydb.commit()
         print('Saldo van', naam, 'na aftrek: ', SaldoAf)
-        
 
-
-    
+    def checkPin(self, naam, pinCode):
+        mycursor = mydb.cursor()
+        sql_query = """SELECT pincode FROM test_tabel WHERE naam = %s"""
+        mycursor.execute(sql_query, (naam,))
+        data = mycursor.fetchall()
+        code = data[0][0]
+        if code == pinCode:
+            print("Goed")
+        else:
+            print("Niet goed")
 
 if __name__ == "__main__":
     MyApp().run()
