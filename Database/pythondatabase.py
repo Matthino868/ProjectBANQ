@@ -1,5 +1,5 @@
 import mysql.connector
-# asdf  comment 3 
+# asdf  comment 3 as;fjklas;fjkl
 mydb = mysql.connector.connect(
     host="145.24.222.71",
     database="test_database",
