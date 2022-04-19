@@ -1,0 +1,150 @@
+#maak de schermen aan in de manager
+<SchermManagement>
+    HoofdScherm:
+        name: 'HoofdScherm'
+    SaldoScherm:
+        name: 'SaldoScherm'
+    AndersScherm:
+        name: 'AndersScherm'
+    CheckScherm:
+        name: 'CheckScherm'
+
+<Button>
+    background_normal: ''
+    background_color: (112/255, 112/255, 112/255)
+    size_hint: (0.5, 0.9)
+    font_size: 32
+
+#na elke <xxx> kan je een scherm designen
+<HoofdScherm>:
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    BoxLayout:
+        orientation: 'vertical'
+        size: root.width, root.height
+
+        spacing: 3
+
+        Label:
+            text: "Hoeveel wilt u pinnen?"
+            font_size: 32
+        
+        Button:
+            text:"5 euro"
+            on_release: 
+                app.setSaldo('Lucas', 5)
+                app.get_running_app().stop()
+
+        Button:
+            text:"10 euro"
+            on_release: 
+                app.setSaldo('Lucas', 10)
+                app.get_running_app().stop()
+
+        Button:
+            text:"20 euro"
+            on_release:
+                app.setSaldo('Lucas', 20)                
+                app.get_running_app().stop()
+
+        Button:
+            text:"50 euro"
+            on_release: 
+                app.setSaldo('Lucas', 50)
+                app.get_running_app().stop()
+
+        Button:
+            text:"Anders"
+            on_release: root.manager.current = 'AndersScherm'
+        
+        Button:
+            text:"Saldo bekijken"
+            on_release: 
+                app.getSaldo('Lucas')
+                root.manager.current = 'SaldoScherm'
+
+<SaldoScherm>
+
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    BoxLayout:
+        orientation: 'vertical'
+        size: root.width, root.height
+
+        spacing: 3
+
+        Label:
+            text: "Dit is uw huidige saldo"
+            font_size: 32
+
+        Label:
+            id: saldo_label
+            text: app.getSaldo('Lucas')
+            font_size: 32
+
+        Button:
+            text:"Terug"
+            font_size: 32
+            on_release: root.manager.current = 'HoofdScherm'
+
+<AndersScherm>
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    GridLayout:
+        cols:1
+        size: root.width, root.height
+
+        BoxLayout:
+            TextInput:
+                id: input
+                hint_text:'Enter text'
+                font_size: 32
+                
+            
+            Button:
+                text: "OK"
+                font_size: 32
+                on_release: app.Afnemen(input.text)
+
+        Button:
+            text:"Terug"
+            font_size: 32
+            on_release: root.manager.current = 'HoofdScherm'
+
+<CheckScherm>
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    GridLayout:
+        cols:1
+        size: root.width, root.height
+
+        Label:
+            text: 'Weet u het zeker?'
+            font_size: 32
+
+        BoxLayout:
+            Button:
+                text: "Ja"
+                font_size: 32
+                on_release: app.get_running_app().stop()
+                
+            Button:
+                text: "Nee"
+                font_size: 32
+                on_release: root.manager.current = 'HoofdScherm'
