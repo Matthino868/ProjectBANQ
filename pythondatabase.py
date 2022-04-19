@@ -21,7 +21,7 @@ temp = data[0][1] + 50
 # print(dir(mycursor))
 mycursor.execute("update test_tabel set balans = " + str(temp) + " where naam = '" + naam + "';")
 mydb.commit()
-# mycursor.fetchall()
+mycursor.fetchall()
 # mycursor.close()
 
 mycursor.execute("select naam,balans from test_tabel where naam = '"+ naam +"';")
