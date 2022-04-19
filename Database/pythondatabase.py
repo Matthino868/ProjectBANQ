@@ -1,4 +1,6 @@
 import mysql.connector
+
+print(dir(mysql.connector))
 # asdf  comment 3 as;fjklas;fjkl
 mydb = mysql.connector.connect(
     host="145.24.222.71",
