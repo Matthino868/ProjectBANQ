@@ -1,3 +1,5 @@
+from codecs import namereplace_errors
+from unittest.mock import NonCallableMagicMock
 import kivy
 from kivy.app import App
 from kivy.uix.label import Label
@@ -24,7 +26,10 @@ mydb = mysql.connector.connect(
 
 #maak alle schermen aan
 class InlogScherm(Screen):
-    pass
+    Naam = None
+
+    def getNaam(self):
+        return InlogScherm.Naam
 
 class HoofdScherm(Screen):
     pass
@@ -38,7 +43,7 @@ class AndersScherm(Screen):
 class CheckScherm(Screen):
     pass
 
-#maak de scherm manager aan
+#maak de scherm managers aan
 class SchermManagement(ScreenManager):
     pass
 
@@ -74,12 +79,11 @@ class MyApp(App):
         mycursor = mydb.cursor()
         sql_query = """SELECT pincode FROM test_tabel WHERE naam = %s"""
         mycursor.execute(sql_query, (naam,))
-        data = mycursor.fetchall()
-        code = data[0][0]
-        if code == pinCode:
-            print("Goed")
+        data = mycursor.fetchall()[0][0]
+        if data == pinCode:
+            return 1
         else:
-            print("Niet goed")
+            return 0
 
 if __name__ == "__main__":
     MyApp().run()

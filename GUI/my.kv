@@ -14,7 +14,7 @@
 <Button>
     background_normal: ''
     background_color: (112/255, 112/255, 112/255)
-    size_hint: (0.5, 0.9)
+    size_hint: (0.5, 0.5)
     font_size: 32
 
 #na elke <xxx> kan je een scherm designen
@@ -25,33 +25,43 @@
             size: self.size
             source: "Foto's/BanqTemplate.png"
 
-    BoxLayout:
-        orientation: 'vertical'
+    FloatLayout
         size: root.width, root.height
 
         spacing: 5
 
         Label:
             text: "Inloggen"
+            id: Label1
             font_size: 32
             color: (0, 0, 0, 1)
+            pos_hint: {'x': 0, 'top': 1.42 }
+        
 
         TextInput:
             id: input1
             hint_text:'Enter name'
             font_size: 32
-            size_hint: (0.5, 0.8)
+            size_hint: (0.5, 0.5)
 
         TextInput:
             id: input2
             hint_text:'Enter pin'
             font_size: 32
-            size_hint: (0.5, 0.8)
+            size_hint: (0.5, 0.3)
 
         Button:
             text:"OK"
             font_size: 32
-            on_release: app.checkPin(input1.text, input2.text)
+            size_hint: (0.5, 0.2)
+            pos_hint: {'x': 0, 'y': 0}
+            on_release: 
+                if app.checkPin(input1.text, input2.text) == 1: root.manager.current = 'HoofdScherm'
+                elif app.checkPin(input1.text, input2.text) == 0: print('Foute pincode!')
+                
+
+
+
 
 <HoofdScherm>:
     canvas.before:
@@ -121,11 +131,13 @@
         Label:
             text: "Dit is uw huidige saldo"
             font_size: 32
+            color: (0, 0, 0, 1)
 
         Label:
             id: saldo_label
             text: app.getSaldo('Lucas')
             font_size: 32
+            color: (0, 0, 0, 1)
 
         Button:
             text:"Terug"
