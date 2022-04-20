@@ -34,7 +34,6 @@
             text: "Inloggen"
             id: Label1
             font_size: 32
-            color: (0, 0, 0, 1)
             pos_hint: {'x': 0, 'top': 1.42 }
         
 
@@ -56,13 +55,12 @@
             size_hint: (0.5, 0.2)
             pos_hint: {'x': 0, 'y': 0}
             on_release: 
-                if app.checkPin(input1.text, input2.text) == 1: root.manager.current = 'HoofdScherm'
-                elif app.checkPin(input1.text, input2.text) == 0: print('Foute pincode!')
+                if app.checkPin(input1.text, input2.text) == 1: \ 
+                root.setNaam(input1.text); \
+                root.manager.current = 'HoofdScherm' 
+                elif app.checkPin(input1.text, input2.text) == 0: \
+                print('Foute pincode!')
                 
-
-
-
-
 <HoofdScherm>:
     canvas.before:
         Rectangle:
@@ -83,26 +81,26 @@
         Button:
             text:"5 euro"
             on_release: 
-                app.setSaldo('Lucas', 5)
-                app.get_running_app().stop()
+                app.setSaldo(5)
+                #app.get_running_app().stop()
 
         Button:
             text:"10 euro"
             on_release: 
-                app.setSaldo('Lucas', 10)
-                app.get_running_app().stop()
+                app.setSaldo(10)
+                #app.get_running_app().stop()
 
         Button:
             text:"20 euro"
             on_release:
-                app.setSaldo('Lucas', 20)                
-                app.get_running_app().stop()
+                app.setSaldo(20)                
+                #app.get_running_app().stop()
 
         Button:
             text:"50 euro"
             on_release: 
-                app.setSaldo('Lucas', 50)
-                app.get_running_app().stop()
+                app.setSaldo(50)
+                #app.get_running_app().stop()
 
         Button:
             text:"Anders"
@@ -111,11 +109,11 @@
         Button:
             text:"Saldo bekijken"
             on_release: 
-                app.getSaldo('Lucas')
+                app.getSaldo()
                 root.manager.current = 'SaldoScherm'
 
 <SaldoScherm>
-
+    on_pre_enter: saldo_label.text = app.getSaldo()
     canvas.before:
         Rectangle:
             pos: self.pos
@@ -135,7 +133,7 @@
 
         Label:
             id: saldo_label
-            text: app.getSaldo('Lucas')
+            text: ' '
             font_size: 32
             color: (0, 0, 0, 1)
 

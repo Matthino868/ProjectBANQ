@@ -10,10 +10,8 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
-from kivy.properties import StringProperty
 from kivy.uix.widget import Widget
 from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.properties import ObjectProperty
 import mysql.connector
 
 #connect aan de database
@@ -24,12 +22,15 @@ mydb = mysql.connector.connect(
     password="Password01!"
 )
 
-#maak alle schermen aan
+#maak alle schermen aan met de nodige functies
 class InlogScherm(Screen):
     Naam = None
 
     def getNaam(self):
         return InlogScherm.Naam
+
+    def setNaam(self, nieuwNaam):
+        InlogScherm.Naam = nieuwNaam
 
 class HoofdScherm(Screen):
     pass
@@ -47,14 +48,14 @@ class CheckScherm(Screen):
 class SchermManagement(ScreenManager):
     pass
 
-
 class MyApp(App):   
     def build(self):
         return SchermManagement()
 
-    def getSaldo(self, naam):
+    def getSaldo(self):
         global SaldoInt
         global SaldoStr
+        naam = InlogScherm.getNaam(self)
         mycursor = mydb.cursor()
         sql_query = """SELECT balans FROM test_tabel WHERE naam = %s"""
         #sql_query = """SELECT Saldo FROM klanten WHERE naamKlanten = %s"""
@@ -65,8 +66,9 @@ class MyApp(App):
         SaldoStr = str(SaldoInt)
         return SaldoStr
 
-    def setSaldo(self, naam, aftrek):
-        Saldo = int(self.getSaldo(naam))
+    def setSaldo(self, aftrek):
+        naam = InlogScherm.getNaam(self)
+        Saldo = int(self.getSaldo())
         SaldoAf = Saldo - aftrek
         mycursor = mydb.cursor()
         sql_query = """UPDATE test_tabel SET balans = %s WHERE naam = %s"""
