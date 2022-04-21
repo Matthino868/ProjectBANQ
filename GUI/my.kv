@@ -35,11 +35,17 @@
             id: Label1
             font_size: 32
             pos_hint: {'x': 0, 'top': 1.42 }
-        
 
+        Label:
+            text: ""
+            id: Label3
+            font_size: 32
+            color: (0, 0, 0, 1)
+            pos_hint: {'x': 0, 'top': 1.2 }
+        
         TextInput:
             id: input1
-            hint_text:'Enter name'
+            hint_text:'Enter number'
             font_size: 32
             size_hint: (0.5, 0.5)
 
@@ -55,11 +61,11 @@
             size_hint: (0.5, 0.2)
             pos_hint: {'x': 0, 'y': 0}
             on_release: 
+                root.setNummer(input1.text)
                 if app.checkPin(input1.text, input2.text) == 1: \ 
-                root.setNaam(input1.text); \
                 root.manager.current = 'HoofdScherm' 
                 elif app.checkPin(input1.text, input2.text) == 0: \
-                print('Foute pincode!')
+                Label3.text = 'Foute pincode!'
                 
 <HoofdScherm>:
     canvas.before:
@@ -72,7 +78,7 @@
         orientation: 'vertical'
         size: root.width, root.height
 
-        spacing: 3
+        spacing: 5
 
         Label:
             text: "Hoeveel wilt u pinnen?"
@@ -149,21 +155,28 @@
             size: self.size
             source: "Foto's/BanqTemplate.png"
 
-    GridLayout:
-        cols:1
+    BoxLayout:
+        orientation: 'vertical'
         size: root.width, root.height
 
-        BoxLayout:
-            TextInput:
-                id: input
-                hint_text:'Enter text'
-                font_size: 32
-                
+        spacing: 3
+
+        Label:
+            text: 'Wat is uw gewenste hoeveelheid '
+            font_size: 32
+            color: (0, 0, 0, 1)
+
+        TextInput:
+            id: input
+            hint_text:'Enter text'
+            font_size: 32
+            size_hint: (0.5, 0.5)
             
-            Button:
-                text: "OK"
-                font_size: 32
-                on_release: app.Afnemen(input.text)
+        
+        Button:
+            text: "OK"
+            font_size: 32
+            on_release: app.setSaldo(input.text)
 
         Button:
             text:"Terug"

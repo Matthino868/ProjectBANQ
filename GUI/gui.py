@@ -1,5 +1,3 @@
-from codecs import namereplace_errors
-from unittest.mock import NonCallableMagicMock
 import kivy
 from kivy.app import App
 from kivy.uix.label import Label
@@ -24,13 +22,14 @@ mydb = mysql.connector.connect(
 
 #maak alle schermen aan met de nodige functies
 class InlogScherm(Screen):
-    Naam = None
+    vastNummer = "MKBANQ0000000"
+    varNummer = None
 
-    def getNaam(self):
-        return InlogScherm.Naam
+    def getNummer(self):
+        return InlogScherm.varNummer
 
-    def setNaam(self, nieuwNaam):
-        InlogScherm.Naam = nieuwNaam
+    def setNummer(self, nieuwNaam):
+        InlogScherm.varNummer = InlogScherm.vastNummer + nieuwNaam
 
 class HoofdScherm(Screen):
     pass
@@ -55,9 +54,9 @@ class MyApp(App):
     def getSaldo(self):
         global SaldoInt
         global SaldoStr
-        naam = InlogScherm.getNaam(self)
+        naam = InlogScherm.getNummer(self)
         mycursor = mydb.cursor()
-        sql_query = """SELECT balans FROM test_tabel WHERE naam = %s"""
+        sql_query = """SELECT balans FROM test_tabel WHERE rekeningnummer = %s"""
         #sql_query = """SELECT Saldo FROM klanten WHERE naamKlanten = %s"""
         mycursor.execute(sql_query, (naam,))
         data = mycursor.fetchall()
@@ -67,20 +66,25 @@ class MyApp(App):
         return SaldoStr
 
     def setSaldo(self, aftrek):
-        naam = InlogScherm.getNaam(self)
+        if isinstance(aftrek, int):
+            pass
+        elif isinstance(aftrek, str):
+            aftrek = int(aftrek)
+        naam = InlogScherm.getNummer(self)
         Saldo = int(self.getSaldo())
         SaldoAf = Saldo - aftrek
         mycursor = mydb.cursor()
-        sql_query = """UPDATE test_tabel SET balans = %s WHERE naam = %s"""
+        sql_query = """UPDATE test_tabel SET balans = %s WHERE rekeningnummer = %s"""
         #sql_query = """UPDATE klanten SET Saldo = %s WHERE naamKlanten = %s"""
         mycursor.execute(sql_query, (SaldoAf, naam,))
         mydb.commit()
         print('Saldo van', naam, 'na aftrek: ', SaldoAf)
 
-    def checkPin(self, naam, pinCode):
+    def checkPin(self, nummer, pinCode):
+        nummer = InlogScherm.varNummer
         mycursor = mydb.cursor()
-        sql_query = """SELECT pincode FROM test_tabel WHERE naam = %s"""
-        mycursor.execute(sql_query, (naam,))
+        sql_query = """SELECT pincode FROM test_tabel WHERE rekeningnummer = %s"""
+        mycursor.execute(sql_query, (nummer,))
         data = mycursor.fetchall()[0][0]
         if data == pinCode:
             return 1
