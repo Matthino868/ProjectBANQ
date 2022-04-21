@@ -20,7 +20,7 @@ mydb = mysql.connector.connect(
     password="Password01!"
 )
 
-#maak alle schermen aan met de nodige functies
+#maak alle schermen aan met de nodige functies en variabelen
 class InlogScherm(Screen):
     vastNummer = "MKBANQ0000000"
     varNummer = None
@@ -32,16 +32,25 @@ class InlogScherm(Screen):
         InlogScherm.varNummer = InlogScherm.vastNummer + nieuwNaam
 
 class HoofdScherm(Screen):
-    pass
+    aftrekHoeveelheid = None
+
+    def setHoeveelheid(self, hoeveelheid):
+        HoofdScherm.aftrekhoeveelheid = hoeveelheid
+        print(HoofdScherm.aftrekhoeveelheid)
+
+    def getHoeveelheid(self):
+        return HoofdScherm.aftrekhoeveelheid
 
 class SaldoScherm(Screen):
     pass
 
 class AndersScherm(Screen):
-    pass
+
+    def setHoeveelheid(self, hoeveelheid):
+        HoofdScherm.setHoeveelheid(self, hoeveelheid)
 
 class CheckScherm(Screen):
-    aftrekHoeveelheid = None
+    pass
 
 #maak de scherm managers aan
 class SchermManagement(ScreenManager):
@@ -66,7 +75,8 @@ class MyApp(App):
         return SaldoStr
 
 
-    def setSaldo(self, aftrek):
+    def setSaldo(self):
+        aftrek = HoofdScherm.getHoeveelheid(self)
         if isinstance(aftrek, int):
             pass
         elif isinstance(aftrek, str):

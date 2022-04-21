@@ -22,6 +22,9 @@
 
 #na elke <xxx> kan je een scherm designen
 <InlogScherm>:
+    on_pre_enter: 
+        input1.text = '' 
+        input2.text = ''
     canvas.before:
         Rectangle:
             pos: self.pos
@@ -57,6 +60,7 @@
             hint_text:'Enter pin'
             font_size: 32
             size_hint: (0.5, 0.3)
+            password: True
 
         Button:
             text:"OK"
@@ -90,26 +94,26 @@
         Button:
             text:"5 euro"
             on_release: 
-                app.setSaldo(5)
-                #app.get_running_app().stop()
+                root.setHoeveelheid(5)
+                root.manager.current = 'CheckScherm'
 
         Button:
             text:"10 euro"
             on_release: 
-                app.setSaldo(10)
-                #app.get_running_app().stop()
+                root.setHoeveelheid(10)
+                root.manager.current = 'CheckScherm'
 
         Button:
             text:"20 euro"
             on_release:
-                app.setSaldo(20)                
-                #app.get_running_app().stop()
+                root.setHoeveelheid(20)             
+                root.manager.current = 'CheckScherm'
 
         Button:
             text:"50 euro"
             on_release: 
-                app.setSaldo(50)
-                #app.get_running_app().stop()
+                root.setHoeveelheid(50)
+                root.manager.current = 'CheckScherm'
 
         Button:
             text:"Different"
@@ -120,6 +124,11 @@
             on_release: 
                 app.getSaldo()
                 root.manager.current = 'SaldoScherm'
+
+        Button:
+            text:"Cancel"
+            on_release: 
+                root.manager.current = 'InlogScherm'
 
 <SaldoScherm>
     on_pre_enter: saldo_label.text = '€' + app.getSaldo()
@@ -179,7 +188,9 @@
         Button:
             text: "OK"
             font_size: 32
-            on_release: app.setSaldo(input.text)
+            on_release: 
+                root.setHoeveelheid(input.text)
+                root.manager.current = 'CheckScherm'
 
         Button:
             text:"back"
@@ -200,12 +211,15 @@
         Label:
             text: 'Are you sure?'
             font_size: 32
+            color: (0, 0, 0, 1)
 
         BoxLayout:
             Button:
                 text: "Yes"
                 font_size: 32
-                on_release: app.get_running_app().stop()
+                on_release: 
+                    app.setSaldo() 
+                    root.manager.current = 'HoofdScherm'
                 
             Button:
                 text: "No"
