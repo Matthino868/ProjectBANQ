@@ -25,6 +25,8 @@
     on_pre_enter: 
         input1.text = '' 
         input2.text = ''
+        Label3.text = ''
+
     canvas.before:
         Rectangle:
             pos: self.pos
@@ -73,6 +75,9 @@
                 root.manager.current = 'HoofdScherm' 
                 elif app.checkPin(input1.text, input2.text) == 0: \
                 Label3.text = 'Wrong pin!'
+                input1.text = '' 
+                input2.text = ''
+
                 
 <HoofdScherm>:
     canvas.before:
@@ -219,7 +224,7 @@
                 font_size: 32
                 on_release: 
                     app.setSaldo() 
-                    root.manager.current = 'HoofdScherm'
+                    root.manager.current = 'InlogScherm'
                 
             Button:
                 text: "No"
