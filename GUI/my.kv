@@ -1,5 +1,8 @@
+#: import NoTransition kivy.uix.screenmanager.NoTransition
+
 #maak de schermen aan in de manager
 <SchermManagement>
+    transition: NoTransition()
     InlogScherm:
         name: 'InlogScherm'
     HoofdScherm:
@@ -31,7 +34,7 @@
         spacing: 5
 
         Label:
-            text: "Inloggen"
+            text: "login"
             id: Label1
             font_size: 32
             pos_hint: {'x': 0, 'top': 1.42 }
@@ -65,7 +68,7 @@
                 if app.checkPin(input1.text, input2.text) == 1: \ 
                 root.manager.current = 'HoofdScherm' 
                 elif app.checkPin(input1.text, input2.text) == 0: \
-                Label3.text = 'Foute pincode!'
+                Label3.text = 'Wrong pin!'
                 
 <HoofdScherm>:
     canvas.before:
@@ -81,7 +84,7 @@
         spacing: 5
 
         Label:
-            text: "Hoeveel wilt u pinnen?"
+            text: "What amount do you want to withdraw?"
             font_size: 32
         
         Button:
@@ -109,17 +112,17 @@
                 #app.get_running_app().stop()
 
         Button:
-            text:"Anders"
+            text:"Different"
             on_release: root.manager.current = 'AndersScherm'
         
         Button:
-            text:"Saldo bekijken"
+            text:"See balance"
             on_release: 
                 app.getSaldo()
                 root.manager.current = 'SaldoScherm'
 
 <SaldoScherm>
-    on_pre_enter: saldo_label.text = app.getSaldo()
+    on_pre_enter: saldo_label.text = '€' + app.getSaldo()
     canvas.before:
         Rectangle:
             pos: self.pos
@@ -133,7 +136,7 @@
         spacing: 3
 
         Label:
-            text: "Dit is uw huidige saldo"
+            text: "This is your balance"
             font_size: 32
             color: (0, 0, 0, 1)
 
@@ -144,7 +147,7 @@
             color: (0, 0, 0, 1)
 
         Button:
-            text:"Terug"
+            text:"Back"
             font_size: 32
             on_release: root.manager.current = 'HoofdScherm'
 
@@ -162,13 +165,13 @@
         spacing: 3
 
         Label:
-            text: 'Wat is uw gewenste hoeveelheid '
+            text: 'What amount do you want to withdraw?'
             font_size: 32
             color: (0, 0, 0, 1)
 
         TextInput:
             id: input
-            hint_text:'Enter text'
+            hint_text:'Enter amount'
             font_size: 32
             size_hint: (0.5, 0.5)
             
@@ -179,7 +182,7 @@
             on_release: app.setSaldo(input.text)
 
         Button:
-            text:"Terug"
+            text:"back"
             font_size: 32
             on_release: root.manager.current = 'HoofdScherm'
 
@@ -195,16 +198,16 @@
         size: root.width, root.height
 
         Label:
-            text: 'Weet u het zeker?'
+            text: 'Are you sure?'
             font_size: 32
 
         BoxLayout:
             Button:
-                text: "Ja"
+                text: "Yes"
                 font_size: 32
                 on_release: app.get_running_app().stop()
                 
             Button:
-                text: "Nee"
+                text: "No"
                 font_size: 32
                 on_release: root.manager.current = 'HoofdScherm'

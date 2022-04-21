@@ -41,7 +41,7 @@ class AndersScherm(Screen):
     pass
 
 class CheckScherm(Screen):
-    pass
+    aftrekHoeveelheid = None
 
 #maak de scherm managers aan
 class SchermManagement(ScreenManager):
@@ -54,31 +54,32 @@ class MyApp(App):
     def getSaldo(self):
         global SaldoInt
         global SaldoStr
-        naam = InlogScherm.getNummer(self)
+        nummer = InlogScherm.getNummer(self)
         mycursor = mydb.cursor()
         sql_query = """SELECT balans FROM test_tabel WHERE rekeningnummer = %s"""
         #sql_query = """SELECT Saldo FROM klanten WHERE naamKlanten = %s"""
-        mycursor.execute(sql_query, (naam,))
+        mycursor.execute(sql_query, (nummer,))
         data = mycursor.fetchall()
         SaldoInt = data[0][0]
         #print('Saldo van lucas voor aftrek: ', data[0][0])
         SaldoStr = str(SaldoInt)
         return SaldoStr
 
+
     def setSaldo(self, aftrek):
         if isinstance(aftrek, int):
             pass
         elif isinstance(aftrek, str):
             aftrek = int(aftrek)
-        naam = InlogScherm.getNummer(self)
+        nummer = InlogScherm.getNummer(self)
         Saldo = int(self.getSaldo())
         SaldoAf = Saldo - aftrek
         mycursor = mydb.cursor()
         sql_query = """UPDATE test_tabel SET balans = %s WHERE rekeningnummer = %s"""
         #sql_query = """UPDATE klanten SET Saldo = %s WHERE naamKlanten = %s"""
-        mycursor.execute(sql_query, (SaldoAf, naam,))
+        mycursor.execute(sql_query, (SaldoAf, nummer,))
         mydb.commit()
-        print('Saldo van', naam, 'na aftrek: ', SaldoAf)
+        #print('Saldo van', naam, 'na aftrek: ', SaldoAf)
 
     def checkPin(self, nummer, pinCode):
         nummer = InlogScherm.varNummer
