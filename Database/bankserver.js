@@ -2,14 +2,13 @@ const express = require('express');
 const app = express();
 const fs = require('fs');
 const http = require('http');
-const https = require('https');
+// const https = require('https');
 const messages = require('./messages.json')
 // const filepaths = require('../../../filepaths.json');
 // const filepaths = require('../Keys');
 const r = messages.noob;
 const wysd = messages.wysd;
 const mysql =  require('mysql');
-var testresult = 600;
 
 var con = mysql.createConnection({
   host: "127.0.0.1",
@@ -23,7 +22,7 @@ var con = mysql.createConnection({
 //Note that rejectUnauth is false in order to politely respond to invalid certs
 const opts = {
    key: fs.readFileSync('./keys/country_key.pem'),
-   cert: fs.readFileSync('./keys/mk-server-chain.pem'),
+   cert: fs.readFileSync('./keys/mk_server_chain.pem'),
     requestCert: true,
     rejectUnauthorized: false,
     // ca: [fs.readFileSync(filepaths.noobRoot),
@@ -56,13 +55,13 @@ function handlePostRequest(req, res, retObj, foutcode) {
 * httpMethod: 	Which HTTP method is to be used. POST or GET probably.
 * _callback:	Callback function to be executed when the response from the target country is received.
 */
-async function sendRequest(dstIP, sendObj, apiMethod, httpMethod, _callback) {
+async function sendRequest(sendObj, apiMethod,  _callback) {
     const apiMethodStr = '/'.concat(apiMethod);
     const https_options = {
-	host:	 	    dstIP,
+	host:	 	    "145.24.222.128",
 	port: 		    8443,
 	path: 		    apiMethodStr,
-	method:		    httpMethod,
+	method:		    'POST',
     headers:        { 'Content-Type': 'application/json' },
     cert: 		    opts.cert,
 	key:            opts.key,
@@ -75,17 +74,21 @@ async function sendRequest(dstIP, sendObj, apiMethod, httpMethod, _callback) {
             res.setEncoding('utf8');
             res.on('data', (obj) => {
                 console.log('asdf2');
-                console.log(obj);
+                // console.log(obj);
                 try {
                     const responseObj = JSON.parse(obj);
+                    console.log(sendObj);
+                    console.log('1');
+                    console.log(responseObj);
                     console.log("2");
                     // const resFromBank = JSON.parse(responseObj).head.fromBank;
-                    // const resToBank = sendObj.head.fromBank;
-                    // writeLogs("Response from [" + resFromBank + "]. Forwarding to [" + resToBank + "]");
+                    const resFromBank = responseObj.head.fromBank;
+                    const resToBank = sendObj.head.fromBank;
+                    console.log("Response from [" + resFromBank + "]. Forwarding to [" + resToBank + "]");
                     _callback(true, res.statusCode, responseObj);
                 }
                 catch(e) {
-                    // writeLogs(r.jsonParseError.message + e.message);
+                    console.log(r.jsonParseError.message + e.message);
                     _callback(false, r.jsonParseError.code, r.jsonParseError.message + wysd.seeLogs);
                 }
             });
@@ -99,7 +102,7 @@ async function sendRequest(dstIP, sendObj, apiMethod, httpMethod, _callback) {
             });
         });
         req.on('error', (e) => {
-            // writeLogs(r.requestCompileError.message + e.message);
+            console.log(r.requestCompileError.message + e.message);
             req.destroy();
             _callback(false, r.requestCompileError.code, r.requestCompileError.message + wysd.seeLogs);
         });
@@ -120,12 +123,13 @@ app.get('/test', (req, res) => {
 });
 
 app.post('/balance', (req, res) => {
+    console.log("Er wordt een balans verzoek gestuurd")
     if(req.body.head.toCtry == 'MK' && req.body.head.toBank == 'BANQ'){
-        con.query("SELECT COUNT(balans) AS rekeningnummer FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT COUNT(rekeningnummer) FROM test_tabel WHERE rekeningnummer = ? AND pincode = ? UNION ALL SELECT balans FROM test_tabel WHERE rekeningnummer = ? AND pincode = ? UNION ALL SELECT pogingen FROM test_tabel WHERE rekeningnummer = ? AND pincode = ?;", [req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin, req.body.body.acctNo, req.body.body.pin, req.body.body.acctNo, req.body.body.pin], function(err, result){
+        con.query("SELECT COUNT(balans) AS rekeningnummer FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT COUNT(rekeningnummer)           FROM test_tabel WHERE rekeningnummer = ? AND pincode = ? UNION ALL SELECT pogingen FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT balans FROM test_tabel WHERE rekeningnummer = ? AND pincode = ?;", [req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin, req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin], function(err, result){
             console.log(result);
             if(result[0].rekeningnummer == 1){          // rekeningnummer bestaat
-                if(result[1].rekeningnummer == 1){      // pincode is correct
-                    if(result[2].rekeningnummer != 3){  // genoeg pogingen over
+                if(result[2].rekeningnummer < 3){          // genoeg pogingen over
+                    if(result[1].rekeningnummer == 1){      // pincode is correct
                         const retObj = JSON.stringify({
                             'head': {
                                 'fromCtry': 'MK',
@@ -135,18 +139,18 @@ app.post('/balance', (req, res) => {
                             },
                             'body': {
                                 'acctNo': req.body.body.acctNo,
-                                'amount': result[2].rekeningnummer
+                                'balance': result[3].rekeningnummer
                             }
                         });
                         handlePostRequest(req, res, retObj, 200);
                     }
                     else{
-                        res.status(403).send("Pas geblokkeerd");
+                        res.status(401).send("Incorrecte Pincode");
+                        con.query("UPDATE test_tabel SET pogingen = pogingen + 1 WHERE rekeningnummer = ?;", [req.body.body.acctNo])
                     }
                 }
                 else{
-                    res.status(401).send("Incorrecte Pincode");
-                    con.query("UPDATE test_tabel SET pogingen = pogingen + 1 WHERE rekeningnummer = ?;", [req.body.body.acctNo])
+                    res.status(403).send("Pas geblokkeerd");
                 }
             }
             else{
@@ -186,30 +190,73 @@ app.post('/balance', (req, res) => {
         // });
 
         // req.end();
-
-        sendRequest('145.24.222.71', req.body, "/test", 'GET', function(success, code, result) {
+        // console.log(typeof(req));
+        console.log(req.body.head);
+        sendRequest(req.body, "balance", function(success, code, result) {
             console.log('asdf3');
-		    const response = success ? JSON.parse(result) : result;
-		    res.status(code).send(response);
+            console.log(result);
+		    // const response = success ? JSON.parse(result) : result;
+		    res.status(code).send(result);
 	 	});
     }
 });
 
 app.post('/withdraw', (req, res) => {
-    const retObj = JSON.stringify({
-            'head': {
-                'fromCtry': 'T1',
-                'fromBank': 'TEST',
-                'toCtry': req.body.head.fromCtry,
-                'toBank': req.body.head.fromBank
-            },
-            'body': {
-                'acctNo': req.body.body.acctNo,
-                'success': true
+    console.log("Er wordt een withdraw verzoek gestuurd");
+    if(req.body.head.toCtry == 'MK' && req.body.head.toBank == 'BANQ'){
+        con.query("SELECT COUNT(balans) AS rekeningnummer FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT COUNT(rekeningnummer)           FROM test_tabel WHERE rekeningnummer = ? AND pincode = ? UNION ALL SELECT pogingen FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT balans FROM test_tabel WHERE rekeningnummer = ? AND pincode = ?;", [req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin, req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin], function(err, result){
+            console.log(result);
+            if(result[0].rekeningnummer == 1){      // rekeningnummer bestaat
+                if(result[2].rekeningnummer < 3){       // genoeg pogingen over
+                    if(result[1].rekeningnummer == 1){      // pincode is correct
+                        if(result[3].rekeningnummer >= req.body.body.amount){
+                            con.query("UPDATE test_tabel SET balans = balans - ? WHERE rekeningnummer = ?;", [req.body.body.amount, req.body.body.acctNo])
+                            const retObj = JSON.stringify({
+                                'head': {
+                                    'fromCtry': 'MK',
+                                    'fromBank': 'BANQ',
+                                    'toCtry': req.body.head.fromCtry,
+                                    'toBank': req.body.head.fromBank
+                                },
+                                'body': {
+                                    'success': true,
+                                    'acctNo': req.body.body.acctNo,
+                                    'balance': result[3].rekeningnummer
+                                }
+                            });
+                            handlePostRequest(req, res, retObj, 200);
+                        }
+                        else{
+                            const retObj = JSON.stringify({
+                                'head': {
+                                    'fromCtry': 'MK',
+                                    'fromBank': 'BANQ',
+                                    'toCtry': req.body.head.fromCtry,
+                                    'toBank': req.body.head.fromBank
+                                },
+                                'body': {
+                                    'success': false,
+                                    'acctNo': req.body.body.acctNo,
+                                    'balance': result[3].rekeningnummer
+                                }
+                            });
+                            handlePostRequest(req, res, retObj, 406);
+                        }
+                    }
+                    else{
+                        res.status(401).send("Incorrecte Pincode");
+                        con.query("UPDATE test_tabel SET pogingen = pogingen + 1 WHERE rekeningnummer = ?;", [req.body.body.acctNo])
+                    }
+                }
+                else{
+                    res.status(403).send("Pas geblokkeerd");
+                }
             }
-    });
-    console.log('Incoming withdraw request');
-    handlePostRequest(req, res, retObj);
+            else{
+                res.status(404).send("Rekeningnummer bestaat niet");
+            }
+        });
+    }
 });
 
 console.log('de server is gestart');
