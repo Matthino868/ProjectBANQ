@@ -18,29 +18,6 @@ cert: fs.readFileSync('./keys/mk_server_chain.pem'),
     // ca: [fs.readFileSync(filepaths.noobRoot),
     //      fs.readFileSync(filepaths.noobCA)]
 }
-const optsHTTPS = {
-    key: fs.readFileSync('./keys/country_key.pem'),
-    cert: fs.readFileSync('./keys/mk_server_chain.pem'),
-    requestCert: true,
-    rejectUnauthorized: false,
-    // ca: [fs.readFileSync(filepaths.noobRoot),
-    //      fs.readFileSync(filepaths.noobCA)]
-}
-
-function handlePostRequest(req, res, retObj, foutcode) {
-    if (!req.is('application/json')){
-        console.log(r.expectedJSONError.message + wysd.sanityCheck)
-        res.status(r.expectedJSONError.code).send(r.expectedJSONError.message + wysd.sanityCheck);
-        return;
-    }
-    res.status(foutcode).json(retObj)
-/*    if (req.client.authorized) {
-        res.status(200).json(retObj)
-    } else {
-        console.log(r.invalidCertIssuer.message);
-        res.status(r.unauthorized.code).send(r.unauthorized.message + wysd.seeLogs);
-    }*/
-}
 
 /**
 * async function sendRequest(dstIP, sendObj, apiMethod, _callback)
@@ -71,23 +48,23 @@ async function sendHTTPRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
         const req = await http.request(https_options, (res) => {
             res.setEncoding('utf8');
             res.on('data', (obj) => {
-                console.log('land7');
+                console.log('Ontvangen object');
+                console.log(res.statusCode);
                 console.log(obj);
                 try {
                     const responseObj = JSON.parse(obj);
+                    console.log('Verstuurd object');
+                    console.log(sendObj);
+                    console.log('Ontvangen object na parsen');
                     console.log(responseObj);
-                    console.log("land8");
                     const resFromBank = responseObj['head']['fromBank'];
                     const resToBank = responseObj['head']['toBank'];
                     console.log("Response from [" + resFromBank + "]. Forwarding to [" + resToBank + "]");
-                    _callback(true, 200, responseObj);
+                    _callback(true, res.statusCode, responseObj);
                     return;
                 }
                 catch(e) {
                     console.log(`error is ${e}`);
-                    // console.log(res.);
-                    // const responseObj = JSON.parse(obj);
-                    console.log("land9");
                     console.log(res.statusCode);
                     _callback(false, res.statusCode, obj);
                 }
@@ -102,7 +79,7 @@ async function sendHTTPRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
             });
         });
         req.on('error', (e) => {
-            console.log('er ging iets mis')
+            console.log('Er ging iets mis')
             console.log(r.requestCompileError.message + e.message);
             req.destroy();
             _callback(false, r.requestCompileError.code, r.requestCompileError.message + wysd.seeLogs);
@@ -151,7 +128,7 @@ async function sendNOOBRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
                 console.log(sendObj);
                 try {
                     const responseObj = JSON.parse(obj);
-                    console.log('Verstuurd object');
+                    console.log('Verstuurd object na parsen');
                     console.log(sendObj);
                     console.log('Ontvangen object na parsen');
                     console.log(responseObj);
@@ -159,14 +136,13 @@ async function sendNOOBRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
                     const resToBank = responseObj['head']['toBank'];
                     console.log("Response from [" + resFromBank + "]. Forwarding to [" + resToBank + "]");
                     console.log(res.statusCode);
-                    _callback(true, 200, responseObj);
+                    _callback(true, res.statusCode, responseObj);
                     return;
                 }
                 catch(e) {
                     console.log(`error is ${e}`);
-                    console.log("land0");
                     console.log(res.statuscode);
-                    console.log(r.jsonParseError.message + e.message);
+                    console.log(e.message);
                     _callback(false, res.statusCode, obj);
                 }
             });
@@ -180,12 +156,12 @@ async function sendNOOBRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
             });
         });
         req.on('error', (e) => {
-            console.log('er ging iets mis')
+            console.log('Er ging iets mis')
             console.log(e.message);
             req.destroy();
             _callback(false, r.requestCompileError.code, r.requestCompileError.message + wysd.seeLogs);
         });
-        console.log("land10");
+        console.log("Verstuurd object");
         console.log(JSON.stringify(sendObj));
         req.write(JSON.stringify(sendObj));
         req.end();
@@ -208,6 +184,7 @@ app.post('/balance', (req, res) => {
     // console.log(req);
     switch (req.body.head.toBank) {
         case 'MIFL':
+            console.log("Balance verzoek naar MIFL");
             sendHTTPRequest('145.24.222.128', 80, req.body, "transaction/balance", function(success, code, result) {
                 const response = success ? JSON.stringify(result) : result;
                 console.log(response);
@@ -215,24 +192,26 @@ app.post('/balance', (req, res) => {
             })
             break;
         case 'BANQ':
-            console.log(req.statusCode);
+            console.log("Balance verzoek naar BANQ");
             sendHTTPRequest('145.24.222.71', 8443, req.body, "api/balance", function(success, code, result) {
-                const response = success ? JSON.stringify(result) : result;
+                const response = success ? JSON.stringify(JSON.stringify(result)) : result;
                 console.log('Response object');
                 console.log(response);
                 console.log(result);
                 console.log(JSON.stringify(response));
-                res.status(code).send(JSON.stringify(response));
+                res.status(code).send(response);
             })
             break;
         case 'MFER':
-            // sendRequest('145.24.222.128', 80, req.body.body, "transaction/balance", 'POST', function(success, code, result) {
-            //     console.log(result);
-            //     res.status(code).send(result);
-            // })
+            console.log("Balance verzoek naar MFER");
+            sendHTTPRequest('145.24.222.160', 8000, req.body, "balance", 'POST', function(success, code, result) {
+                const response = success ? JSON.stringify(result) : result;
+                console.log(response);
+                res.status(code).send(response);
+            })
             break;
         default:
-            console.log("Verzoek naar de noob");
+            console.log("Balance verzoek naar NOOB");
             sendNOOBRequest('145.24.222.82', 8443, req.body, "api/balance", function(success, code, result) {
                 const response = success ? JSON.stringify(result) : result;
                 console.log(response);
@@ -246,6 +225,7 @@ app.post('/withdraw', (req, res) => {
     console.log("Er wordt een withdraw verzoek gestuurd");
     switch (req.body.head.toBank) {
         case 'MIFL':
+            console.log("Withdraw verzoek naar MIFL");
             sendHTTPRequest('145.24.222.128', 80, req.body, "transaction/withdraw", function(success, code, result) {
                 console.log("land1");
                 console.log(result);
@@ -253,24 +233,27 @@ app.post('/withdraw', (req, res) => {
             })
             break;
         case 'BANQ':
-            console.log(req.statusCode);
+            console.log("Withdraw verzoek naar BANQ");
             sendHTTPRequest('145.24.222.71', 8443, req.body, "api/withdraw", function(success, code, result) {
-                const response = success ? JSON.stringify(result) : result;
+                const response = success ? JSON.stringify(JSON.stringify(result)) : result;
                 console.log(response);
                 res.status(code).send(response);
             })
             break;
         case 'MFER':
-            // sendRequest('145.24.222.128', 80, req.body.body, "transaction/balance", 'POST', function(success, code, result) {
-            //     console.log(result);
-            //     res.status(code).send(result);
-            // })
+            console.log("Withdraw verzoek naar MFER");
+            sendHTTPRequest('145.24.222.160', 8000, req.body, "withdraw", 'POST', function(success, code, result) {
+                const response = success ? JSON.stringify(result) : result;
+                console.log(response);
+                res.status(code).send(JSON.stringify(response));
+            })
             break;
         default:
-            console.log("Verzoek naar de noob");
+            console.log("Withdraw verzoek naar NOOB");
             sendNOOBRequest('145.24.222.82', 8443, req.body, "api/withdraw", function(success, code, result) {
-                console.log(result);
-                res.status(code).send(result);
+                const response = success ? JSON.stringify(result) : result;
+                console.log(response);
+                res.status(code).send(response);
             })
             break;
     }
