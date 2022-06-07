@@ -197,8 +197,8 @@ app.post('/balance', (req, res) => {
                 const response = success ? JSON.stringify(JSON.stringify(result)) : result;
                 console.log('Response object');
                 console.log(response);
-                console.log(result);
-                console.log(JSON.stringify(response));
+                // console.log(result);
+                // console.log(JSON.stringify(response));
                 res.status(code).send(response);
             })
             break;
