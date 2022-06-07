@@ -15,7 +15,6 @@ var con = mysql.createConnection({
   database: "test_database"
 });
 
-
 //HTTPS options
 //Note that rejectUnauth is false in order to politely respond to invalid certs
 const opts = {
@@ -23,8 +22,6 @@ const opts = {
    cert: fs.readFileSync('./keys/mk_server_chain.pem'),
     requestCert: true,
     rejectUnauthorized: false,
-    // ca: [fs.readFileSync(filepaths.noobRoot),
-    //      fs.readFileSync(filepaths.noobCA)]
 }
 
 function handlePostRequest(req, res, retObj, foutcode) {
@@ -34,14 +31,7 @@ function handlePostRequest(req, res, retObj, foutcode) {
         return;
     }
     console.log("bank7");
-    console.log(res);
-    res.status(foutcode).json(retObj)
-/*    if (req.client.authorized) {
-        res.status(200).json(retObj)
-    } else {
-        console.log(r.invalidCertIssuer.message);
-        res.status(r.unauthorized.code).send(r.unauthorized.message + wysd.seeLogs);
-    }*/
+    res.status(foutcode).json(retObj);
 }
 
 /**
@@ -73,14 +63,14 @@ async function sendRequest(sendObj, apiMethod,  _callback) {
         const req = await https.request(https_options, (res) => {
             res.setEncoding('utf8');
             res.on('data', (obj) => {
-                console.log('bank2');
+                console.log('Ontvangen object');
                 console.log(obj);
                 try {
                     const responseObj = JSON.parse(obj);
+                    console.log("Verstuurd object");
                     console.log(sendObj);
-                    console.log('bank3');
+                    console.log("Ontvangen object na parsen");
                     console.log(responseObj);
-                    console.log("bank4");
                     const resFromBank = responseObj.head.fromBank;
                     const resToBank = sendObj.head.fromBank;
                     console.log("Response from [" + resFromBank + "]. Forwarding to [" + resToBank + "]");
@@ -95,14 +85,15 @@ async function sendRequest(sendObj, apiMethod,  _callback) {
         req.on('socket', function (socket) {
             socket.setTimeout(https_options.timeout);
             socket.on('timeout', function() {
-                console.log("bank6");
-                // writeLogs(r.timeoutError.message);
+                console.log("Bij socket ging het mis");
+                console.log(r.timeoutError.message);
                 req.destroy();
                 _callback(false, r.timeoutError.code, r.timeoutError.message);
             });
         });
         req.on('error', (e) => {
-            console.log(r.requestCompileError.message + e.message);
+            console.log("Bij error ging het mis");
+            console.log(e.message);
             req.destroy();
             _callback(false, r.requestCompileError.code, r.requestCompileError.message + wysd.seeLogs);
         });
@@ -110,7 +101,7 @@ async function sendRequest(sendObj, apiMethod,  _callback) {
         req.end();
     } catch(e) {
         console.log("Oops!");
-        // writeLogs(r.sendRequestError.message + e.message);
+        console.log(e.message);
         _callback(false, r.sendRequestTLDR.code, r.sendRequestTLDR.message + wysd.blame);
     }
 }
@@ -129,7 +120,7 @@ app.post('/api/balance', (req, res) => {
         con.query("SELECT COUNT(balans) AS rekeningnummer FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT COUNT(rekeningnummer)           FROM test_tabel WHERE rekeningnummer = ? AND pincode = ? UNION ALL SELECT pogingen FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT balans FROM test_tabel WHERE rekeningnummer = ? AND pincode = ?;", [req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin, req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin], function(err, result){
             console.log(result);
             if(result[0].rekeningnummer == 1){          // rekeningnummer bestaat
-                if(result[2].rekeningnummer < 30){          // genoeg pogingen over
+                if(result[2].rekeningnummer < 3){          // genoeg pogingen over
                     if(result[1].rekeningnummer == 1){      // pincode is correct
                         const retObj = {
                             'head': {
@@ -143,11 +134,22 @@ app.post('/api/balance', (req, res) => {
                                 'balance': result[3].rekeningnummer
                             }
                         };
-                        handlePostRequest(req, res, retObj, 200);
+                        res.status(200).json(retObj);
+                        // handlePostRequest(req, res, retObj, 200);
                     }
                     else{
                         // req.statusCode = 401;
-                        res.status(401).send("Incorrecte Pincode");
+                        res.status(401).send({
+                            'head': {
+                                'fromCtry': 'MK',
+                                'fromBank': 'BANQ',
+                                'toCtry': req.body.head.fromCtry,
+                                'toBank': req.body.head.fromBank
+                            },
+                            'body':{
+                                'attemptsLeft': 3 - result[2].rekeningnummer
+                            }
+                        });
                         // console.log(res);
                         con.query("UPDATE test_tabel SET pogingen = pogingen + 1 WHERE rekeningnummer = ?;", [req.body.body.acctNo])
                     }
@@ -164,7 +166,7 @@ app.post('/api/balance', (req, res) => {
     else{
         console.log('bank1');
         console.log(req.body.head);
-        sendRequest(req.body, "api/balance", function(success, code, result) {
+        sendRequest(req.body, "balance", function(success, code, result) {
             console.log('bank5');
             console.log(result);
 		    res.status(code).send(result);
@@ -178,11 +180,11 @@ app.post('/api/withdraw', (req, res) => {
         con.query("SELECT COUNT(balans) AS rekeningnummer FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT COUNT(rekeningnummer)           FROM test_tabel WHERE rekeningnummer = ? AND pincode = ? UNION ALL SELECT pogingen FROM test_tabel WHERE rekeningnummer = ? UNION ALL SELECT balans FROM test_tabel WHERE rekeningnummer = ? AND pincode = ?;", [req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin, req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin], function(err, result){
             console.log(result);
             if(result[0].rekeningnummer == 1){      // rekeningnummer bestaat
-                if(result[2].rekeningnummer < 3){       // genoeg pogingen over
+                if(result[2].rekeningnummer < 30){       // genoeg pogingen over
                     if(result[1].rekeningnummer == 1){      // pincode is correct
                         if(result[3].rekeningnummer >= req.body.body.amount){
                             con.query("UPDATE test_tabel SET balans = balans - ? WHERE rekeningnummer = ?;", [req.body.body.amount, req.body.body.acctNo])
-                            const retObj = JSON.stringify({
+                            const retObj = {
                                 'head': {
                                     'fromCtry': 'MK',
                                     'fromBank': 'BANQ',
@@ -194,11 +196,11 @@ app.post('/api/withdraw', (req, res) => {
                                     'acctNo': req.body.body.acctNo,
                                     'balance': result[3].rekeningnummer
                                 }
-                            });
+                            };
                             handlePostRequest(req, res, retObj, 200);
                         }
                         else{
-                            const retObj = JSON.stringify({
+                            const retObj = {
                                 'head': {
                                     'fromCtry': 'MK',
                                     'fromBank': 'BANQ',
@@ -210,7 +212,7 @@ app.post('/api/withdraw', (req, res) => {
                                     'acctNo': req.body.body.acctNo,
                                     'balance': result[3].rekeningnummer
                                 }
-                            });
+                            };
                             handlePostRequest(req, res, retObj, 406);
                         }
                     }
@@ -228,8 +230,17 @@ app.post('/api/withdraw', (req, res) => {
             }
         });
     }
+    else{
+        console.log("Verzoek gaat naar de landserver");
+        // console.log('bank1');
+        // console.log(req.body.head);
+        sendRequest(req.body, "withdraw", function(success, code, result) {
+            // console.log('bank5');
+            console.log(result);
+		    res.status(code).send(result);
+	 	});
+    }
 });
 
 console.log('de server is gestart');
 http.createServer(opts, app).listen(8443);
-// console.log('de server is gestart2');
