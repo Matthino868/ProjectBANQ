@@ -15,19 +15,17 @@ key: fs.readFileSync('./keys/country_key.pem'),
 cert: fs.readFileSync('./keys/mk_server_chain.pem'),
     requestCert: true,
     rejectUnauthorized: false,
-    // ca: [fs.readFileSync(filepaths.noobRoot),
-    //      fs.readFileSync(filepaths.noobCA)]
 }
 
 /**
-* async function sendRequest(dstIP, sendObj, apiMethod, _callback)
-* Initiates HTTPS request to target country after receiving a request from source country.
-* Async function with max timeout of 3 seconds. Assumes that everyone uses port 8443.
+* async function sendHTTPRequest(dstIP, dstPort, sendObj, apiMethod, _callback)
+* Initiates HTTP request to target country after receiving a request from source country.
+* Async function with max timeout of 3 seconds. 
 *
 * dstIP:        IP address of the target country.
+* dstPort:      Port of the target country.
 * sendObj:      The request object that is to be passed on to the target country.
 * apiMethod:    The API method to call on the target server. Equals the method called by source country.
-* httpMethod:   Which HTTP method is to be used. POST or GET probably.
 * _callback:    Callback function to be executed when the response from the target country is received.
 */
 async function sendHTTPRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
@@ -38,8 +36,6 @@ async function sendHTTPRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
         path:           apiMethodStr,
         method:         'POST',
         headers:        { 'Content-Type': 'application/json' },
-        cert:           opts.cert,
-        key:            opts.key,
         rejectUnauthorized: false,
         timeout:        3000
     };
@@ -94,21 +90,20 @@ async function sendHTTPRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
 
 
 /**
-* async function sendRequest(dstIP, sendObj, apiMethod, _callback)
-* Initiates HTTPS request to target country after receiving a request from source country.
-* Async function with max timeout of 3 seconds. Assumes that everyone uses port 8443.
+* async function sendNOOBRequest(dstIP, dstPort, sendObj, apiMethod, _callback)
+* Initiates HTTPS request to NOOB server after receiving a request from source country.
+* Async function with max timeout of 3 seconds.
 *
 * dstIP:        IP address of the target country.
 * sendObj:      The request object that is to be passed on to the target country.
 * apiMethod:    The API method to call on the target server. Equals the method called by source country.
-* httpMethod:   Which HTTP method is to be used. POST or GET probably.
 * _callback:    Callback function to be executed when the response from the target country is received.
 */
-async function sendNOOBRequest(dstIP, dstPort, sendObj, apiMethod, _callback) {
+async function sendNOOBRequest(sendObj, apiMethod, _callback) {
     const apiMethodStr = '/'.concat(apiMethod);
     const https_options = {
-        host:           dstIP,
-        port:           dstPort,
+        host:           '145.24.222.82',
+        port:           8443,
         path:           apiMethodStr,
         method:         'POST',
         headers:        { 'Content-Type': 'application/json' },
@@ -181,7 +176,7 @@ app.get('/test', (req, res) => {
 
 app.post('/balance', (req, res) => {
     console.log("Er wordt een balans verzoek gestuurd")
-    // console.log(req);
+    console.log(req.body);
     switch (req.body.head.toBank) {
         case 'MIFL':
             console.log("Balance verzoek naar MIFL");
@@ -212,7 +207,7 @@ app.post('/balance', (req, res) => {
             break;
         default:
             console.log("Balance verzoek naar NOOB");
-            sendNOOBRequest('145.24.222.82', 8443, req.body, "api/balance", function(success, code, result) {
+            sendNOOBRequest(req.body, "api/balance", function(success, code, result) {
                 const response = success ? JSON.stringify(result) : result;
                 console.log(response);
                 res.status(code).send(response);
@@ -227,7 +222,6 @@ app.post('/withdraw', (req, res) => {
         case 'MIFL':
             console.log("Withdraw verzoek naar MIFL");
             sendHTTPRequest('145.24.222.128', 80, req.body, "transaction/withdraw", function(success, code, result) {
-                console.log("land1");
                 console.log(result);
                 res.status(code).send(result);
             })
@@ -250,7 +244,7 @@ app.post('/withdraw', (req, res) => {
             break;
         default:
             console.log("Withdraw verzoek naar NOOB");
-            sendNOOBRequest('145.24.222.82', 8443, req.body, "api/withdraw", function(success, code, result) {
+            sendNOOBRequest(req.body, "api/withdraw", function(success, code, result) {
                 const response = success ? JSON.stringify(result) : result;
                 console.log(response);
                 res.status(code).send(response);
@@ -259,5 +253,5 @@ app.post('/withdraw', (req, res) => {
     }
 });
 
-console.log('de server is gestart');
+console.log('De landserver is gestart');
 https.createServer(opts, app).listen(8443);
