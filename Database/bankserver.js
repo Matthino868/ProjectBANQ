@@ -135,7 +135,7 @@ app.post('/api/balance', (req, res) => {
                                 'toBank': req.body.head.fromBank
                             },
                             'body':{
-                                'attemptsLeft': 2 - result[2].rekeningnummer
+                                'attemptsLeft': 3 - result[2].rekeningnummer
                             }
                         });
                         con.query("UPDATE klanten_tabel SET pogingen = pogingen + 1 WHERE rekeningnummer = ?;", [req.body.body.acctNo])
