@@ -3,6 +3,8 @@
 #maak de schermen aan in de manager
 <SchermManagement>
     transition: NoTransition()
+    BeginScherm:
+        name: 'BeginScherm'
     InlogScherm:
         name: 'InlogScherm'
     HoofdScherm:
@@ -13,19 +15,57 @@
         name: 'AndersScherm'
     CheckScherm:
         name: 'CheckScherm'
+    BlokkeerScherm:
+        name: 'BlokkeerScherm'
+    FoutpinScherm:
+        name: 'FoutpinScherm'
+    GeenBalansScherm
+        name: 'GeenBalansScherm'
+    FoutScherm
+        name: 'FoutScherm'
 
 <Button>
     background_normal: ''
-    background_color: (112/255, 112/255, 112/255)
-    size_hint: (0.5, 0.5)
+    background_color: (36/255, 36/255, 36/255)
+    size_hint: (0.5, 0.4)
+    halign: "left"
     font_size: 32
 
 #na elke <xxx> kan je een scherm designen
+<BeginScherm>
+
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    FloatLayout
+        size: root.width, root.height
+
+        Label:
+            text: 'Scan your card'
+            id: LabelPas
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1.2 }
+            font_size: 50
+
+        Label:
+            text: "press * to proceed"
+            id: LabelPas
+            color: (0,0,0)
+            font_size: 32
+
+        Button:
+            text:"OK"
+            font_size: 32
+            size_hint: (0.5, 0.2)
+            on_press: 
+                print('Gedrukt')
+                if root.nummerCheck() == 1: \
+                root.manager.current = 'InlogScherm'
+
 <InlogScherm>:
-    on_pre_enter: 
-        input1.text = '' 
-        input2.text = ''
-        Label3.text = ''
 
     canvas.before:
         Rectangle:
@@ -39,44 +79,31 @@
         spacing: 5
 
         Label:
-            text: "login"
-            id: Label1
-            font_size: 32
-            pos_hint: {'x': 0, 'top': 1.42 }
+            text: root.inloglabel
+            id: Label3
+            font_size: 35
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1 }
 
         Label:
-            text: ""
-            id: Label3
-            font_size: 32
-            color: (0, 0, 0, 1)
+            text: "Fill in your pin"
+            color: (36, 36, 36)
             pos_hint: {'x': 0, 'top': 1.2 }
-        
-        TextInput:
-            id: input1
-            hint_text:'Enter number'
-            font_size: 32
-            size_hint: (0.5, 0.5)
-
-        TextInput:
-            id: input2
-            hint_text:'Enter pin'
-            font_size: 32
-            size_hint: (0.5, 0.3)
-            password: True
+            font_size: 50
 
         Button:
             text:"OK"
             font_size: 32
             size_hint: (0.5, 0.2)
             pos_hint: {'x': 0, 'y': 0}
-            on_release: 
-                root.setNummer(input1.text)
-                if app.checkPin(input1.text, input2.text) == 1: \ 
-                root.manager.current = 'HoofdScherm' 
-                elif app.checkPin(input1.text, input2.text) == 0: \
-                Label3.text = 'Wrong pin!'
-                input1.text = '' 
-                input2.text = ''
+            on_press:
+                root.inlogStatus = app.checkPin()
+                if root.inlogStatus == 200: root.manager.current = 'HoofdScherm'; app.sendConf("1")
+                if root.inlogStatus == 400: root.manager.current = 'FoutScherm'; app.sendConf('0')
+                if root.inlogStatus == 404: root.manager.current = 'FoutScherm'; app.sendConf('0')
+                if root.inlogStatus == 401: root.manager.current = 'FoutpinScherm'; app.sendConf('0')
+                if root.inlogStatus == 403: root.manager.current = 'BlokkeerScherm'; app.sendConf('0')
+
 
                 
 <HoofdScherm>:
@@ -90,50 +117,34 @@
         orientation: 'vertical'
         size: root.width, root.height
 
-        spacing: 5
+        spacing: 3
 
         Label:
             text: "What amount do you want to withdraw?"
-            font_size: 32
-        
+            font_size: 42
+            color: (36, 36, 36)
+
         Button:
-            text:"5 euro"
+            text:"   70 euro"
             on_release: 
-                root.setHoeveelheid(5)
+                root.setHoeveelheid(70)
                 root.manager.current = 'CheckScherm'
 
         Button:
-            text:"10 euro"
-            on_release: 
-                root.setHoeveelheid(10)
-                root.manager.current = 'CheckScherm'
-
-        Button:
-            text:"20 euro"
-            on_release:
-                root.setHoeveelheid(20)             
-                root.manager.current = 'CheckScherm'
-
-        Button:
-            text:"50 euro"
-            on_release: 
-                root.setHoeveelheid(50)
-                root.manager.current = 'CheckScherm'
-
-        Button:
-            text:"Different"
+            text:"   Different"
             on_release: root.manager.current = 'AndersScherm'
         
         Button:
-            text:"See balance"
+            text:"   See balance"
             on_release: 
                 app.getSaldo()
                 root.manager.current = 'SaldoScherm'
 
         Button:
-            text:"Cancel"
+            text:"   Cancel"
             on_release: 
-                root.manager.current = 'InlogScherm'
+                root.manager.current = 'BeginScherm'
+            on_release: root.resetPinCode()
 
 <SaldoScherm>
     on_pre_enter: saldo_label.text = '€' + app.getSaldo()
@@ -150,19 +161,21 @@
         spacing: 3
 
         Label:
-            text: "This is your balance"
-            font_size: 32
-            color: (0, 0, 0, 1)
+            text: "This is your current balance:"
+            font_size: 50
+            color: (36, 36, 36)
 
         Label:
             id: saldo_label
             text: ' '
-            font_size: 32
-            color: (0, 0, 0, 1)
+            pos_hint: {'x': 0, 'top': 1.3 }
+            font_size: 50
+            color: (36, 36, 36)
 
         Button:
             text:"Back"
             font_size: 32
+            size_hint: (0.5, 0.5)
             on_release: root.manager.current = 'HoofdScherm'
 
 <AndersScherm>
@@ -180,8 +193,8 @@
 
         Label:
             text: 'What amount do you want to withdraw?'
-            font_size: 32
-            color: (0, 0, 0, 1)
+            font_size: 42
+            color: (36, 36, 36)
 
         TextInput:
             id: input
@@ -215,18 +228,146 @@
 
         Label:
             text: 'Are you sure?'
-            font_size: 32
-            color: (0, 0, 0, 1)
+            font_size: 50
+            color: (36, 36, 36)
 
         BoxLayout:
             Button:
                 text: "Yes"
                 font_size: 32
                 on_release: 
-                    app.setSaldo() 
-                    root.manager.current = 'InlogScherm'
+                    root.WithdrawStatus = app.setSaldo() 
+                    if root.WithdrawStatus == 200: root.manager.current = 'BeginScherm' 
+                    if root.WithdrawStatus == 400: root.manager.current = 'FoutScherm' 
+                    if root.WithdrawStatus == 404: root.manager.current = 'FoutScherm' 
+                    if root.WithdrawStatus == 406: root.manager.current = 'GeenBalansScherm'; 
+                    root.resetPinCode()
                 
             Button:
                 text: "No"
                 font_size: 32
                 on_release: root.manager.current = 'HoofdScherm'
+
+<BlokkeerScherm>
+
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    FloatLayout
+        size: root.width, root.height
+
+        Label:
+            text: 'Card is blocked'
+            id: LabelPas
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1.2 }
+            font_size: 50
+
+        Label:
+            text: 'Contact your bank'
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1}
+            font_size: 50
+
+        Button:
+            text:"OK"
+            font_size: 32
+            size_hint: (0.5, 0.2)
+            on_press: 
+                root.manager.current = 'BeginScherm'
+
+<FoutpinScherm>
+
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    FloatLayout
+        size: root.width, root.height
+
+        Label:
+            text: 'Wrong pin'
+            id: LabelPas
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1.2 }
+            font_size: 50
+
+        Label:
+            text: 'Please try again'
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1}
+            font_size: 50
+
+        Button:
+            text:"OK"
+            font_size: 32
+            size_hint: (0.5, 0.2)
+            on_press: 
+                root.manager.current = 'BeginScherm'
+
+<GeenBalansScherm>
+
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    FloatLayout
+        size: root.width, root.height
+
+        Label:
+            text: 'You dont have enough balance'
+            id: LabelPas
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1.2 }
+            font_size: 50
+
+        Label:
+            text: 'Please try again'
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1}
+            font_size: 50
+
+        Button:
+            text:"OK"
+            font_size: 32
+            size_hint: (0.5, 0.2)
+            on_press: 
+                root.manager.current = 'BeginScherm'
+
+<FoutScherm>
+
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Foto's/BanqTemplate.png"
+
+    FloatLayout
+        size: root.width, root.height
+
+        Label:
+            text: 'Something went wrong'
+            id: LabelPas
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1.2 }
+            font_size: 50
+
+        Label:
+            text: 'We are very sorry!'
+            color: (36, 36, 36)
+            pos_hint: {'x': 0, 'top': 1}
+            font_size: 50
+
+        Button:
+            text:"OK"
+            font_size: 32
+            size_hint: (0.5, 0.2)
+            on_press: 
+                root.manager.current = 'BeginScherm'
