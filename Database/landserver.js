@@ -181,7 +181,7 @@ app.post('/balance', (req, res) => {
         case 'MIFL':
             console.log("Balance verzoek naar MIFL");
             sendHTTPRequest('145.24.222.128', 80, req.body, "transaction/balance", function(success, code, result) {
-                const response = success ? JSON.stringify(result) : result;
+                const response = success ? JSON.stringify(JSON.stringify(result)) : result;
                 console.log(response);
                 res.status(code).send(response);
             })
@@ -200,7 +200,7 @@ app.post('/balance', (req, res) => {
         case 'MFER':
             console.log("Balance verzoek naar MFER");
             sendHTTPRequest('145.24.222.160', 8000, req.body, "balance", 'POST', function(success, code, result) {
-                const response = success ? JSON.stringify(result) : result;
+                const response = success ? JSON.stringify(JSON.stringify(result)) : result;
                 console.log(response);
                 res.status(code).send(response);
             })
@@ -222,8 +222,9 @@ app.post('/withdraw', (req, res) => {
         case 'MIFL':
             console.log("Withdraw verzoek naar MIFL");
             sendHTTPRequest('145.24.222.128', 80, req.body, "transaction/withdraw", function(success, code, result) {
-                console.log(result);
-                res.status(code).send(result);
+                const response = success ? JSON.stringify(JSON.stringify(result)) : result;
+                console.log(response);
+                res.status(code).send(response);
             })
             break;
         case 'BANQ':
@@ -237,9 +238,9 @@ app.post('/withdraw', (req, res) => {
         case 'MFER':
             console.log("Withdraw verzoek naar MFER");
             sendHTTPRequest('145.24.222.160', 8000, req.body, "withdraw", 'POST', function(success, code, result) {
-                const response = success ? JSON.stringify(result) : result;
+                const response = success ? JSON.stringify(JSON.stringify(result)) : result;
                 console.log(response);
-                res.status(code).send(JSON.stringify(response));
+                res.status(code).send(response);
             })
             break;
         default:
