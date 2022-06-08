@@ -15,7 +15,7 @@ var con = mysql.createConnection({
   database: "test_database"
 });
 
-//HTTPS options
+//HTTP options
 //Note that rejectUnauth is false in order to politely respond to invalid certs
 const opts = {
    key: fs.readFileSync('./keys/country_key.pem'),
@@ -24,25 +24,13 @@ const opts = {
     rejectUnauthorized: false,
 }
 
-function handlePostRequest(req, res, retObj, foutcode) {
-    if (!req.is('application/json')){
-        console.log(r.expectedJSONError.message + wysd.sanityCheck)
-        res.status(r.expectedJSONError.code).send(r.expectedJSONError.message + wysd.sanityCheck);
-        return;
-    }
-    console.log("bank7");
-    res.status(foutcode).json(retObj);
-}
-
 /**
-* async function sendRequest(dstIP, sendObj, apiMethod, _callback)
-* Initiates HTTPS request to target country after receiving a request from source country.
-* Async function with max timeout of 3 seconds. Assumes that everyone uses port 8443.
+* async function sendRequest(sendObj, apiMethod, _callback)
+* Initiates HTTPS request to landserver after receiving a request from ATM.
+* Async function with max timeout of 3 seconds.
 *
-* dstIP:	IP address of the target country.
 * sendObj:	The request object that is to be passed on to the target country.
 * apiMethod:	The API method to call on the target server. Equals the method called by source country.
-* httpMethod: 	Which HTTP method is to be used. POST or GET probably.
 * _callback:	Callback function to be executed when the response from the target country is received.
 */
 async function sendRequest(sendObj, apiMethod,  _callback) {
@@ -147,7 +135,7 @@ app.post('/api/balance', (req, res) => {
                                 'toBank': req.body.head.fromBank
                             },
                             'body':{
-                                'attemptsLeft': 3 - result[2].rekeningnummer
+                                'attemptsLeft': 2 - result[2].rekeningnummer
                             }
                         });
                         con.query("UPDATE klanten_tabel SET pogingen = pogingen + 1 WHERE rekeningnummer = ?;", [req.body.body.acctNo])
@@ -196,50 +184,67 @@ app.post('/api/balance', (req, res) => {
 
 app.post('/api/withdraw', (req, res) => {
     console.log("Er wordt een withdraw verzoek gestuurd");
-    if(req.body.head.toCtry == 'MK' && req.body.head.toBank == 'BANQ'){
-        con.query("SELECT COUNT(balans) AS rekeningnummer FROM klanten_tabel WHERE rekeningnummer = ? UNION ALL SELECT COUNT(rekeningnummer)           FROM klanten_tabel WHERE rekeningnummer = ? AND pincode = ? UNION ALL SELECT pogingen FROM klanten_tabel WHERE rekeningnummer = ? UNION ALL SELECT balans FROM klanten_tabel WHERE rekeningnummer = ? AND pincode = ?;", [req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin, req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin], function(err, result){
-            console.log(result);
-            if(result[0].rekeningnummer == 1){      // rekeningnummer bestaat
-                if(result[2].rekeningnummer < 30){       // genoeg pogingen over
-                    if(result[1].rekeningnummer == 1){      // pincode is correct
-                        if(result[3].rekeningnummer >= req.body.body.amount){
-                            con.query("UPDATE klanten_tabel SET balans = balans - ? WHERE rekeningnummer = ?;", [req.body.body.amount, req.body.body.acctNo])
-                            const retObj = {
-                                'head': {
-                                    'fromCtry': 'MK',
-                                    'fromBank': 'BANQ',
-                                    'toCtry': req.body.head.fromCtry,
-                                    'toBank': req.body.head.fromBank
-                                },
-                                'body': {
-                                    'success': true,
-                                    'acctNo': req.body.body.acctNo,
-                                    'balance': result[3].rekeningnummer - req.body.body.amount
-                                }
-                            };
-                            res.status(200).json(retObj);
+    if(req.body.body.amount > 0){
+        if(req.body.head.toCtry == 'MK' && req.body.head.toBank == 'BANQ'){
+            con.query("SELECT COUNT(balans) AS rekeningnummer FROM klanten_tabel WHERE rekeningnummer = ? UNION ALL SELECT COUNT(rekeningnummer)           FROM klanten_tabel WHERE rekeningnummer = ? AND pincode = ? UNION ALL SELECT pogingen FROM klanten_tabel WHERE rekeningnummer = ? UNION ALL SELECT balans FROM klanten_tabel WHERE rekeningnummer = ? AND pincode = ?;", [req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin, req.body.body.acctNo, req.body.body.acctNo, req.body.body.pin], function(err, result){
+                console.log(result);
+                if(result[0].rekeningnummer == 1){      // rekeningnummer bestaat
+                    if(result[2].rekeningnummer < 30){       // genoeg pogingen over
+                        if(result[1].rekeningnummer == 1){      // pincode is correct
+                            if(result[3].rekeningnummer >= req.body.body.amount){
+                                con.query("UPDATE klanten_tabel SET balans = balans - ? WHERE rekeningnummer = ?;", [req.body.body.amount, req.body.body.acctNo])
+                                const retObj = {
+                                    'head': {
+                                        'fromCtry': 'MK',
+                                        'fromBank': 'BANQ',
+                                        'toCtry': req.body.head.fromCtry,
+                                        'toBank': req.body.head.fromBank
+                                    },
+                                    'body': {
+                                        'success': true,
+                                        'acctNo': req.body.body.acctNo,
+                                        'balance': result[3].rekeningnummer - req.body.body.amount
+                                    }
+                                };
+                                res.status(200).json(retObj);
+                            }
+                            else{
+                                // Niet genoeg balans
+                                const retObj = {
+                                    'head': {
+                                        'fromCtry': 'MK',
+                                        'fromBank': 'BANQ',
+                                        'toCtry': req.body.head.fromCtry,
+                                        'toBank': req.body.head.fromBank
+                                    },
+                                    'body': {
+                                        'success': false,
+                                        'acctNo': req.body.body.acctNo,
+                                        'balance': result[3].rekeningnummer
+                                    }
+                                };
+                                res.status(406).json(retObj);
+                            }
                         }
                         else{
-                            // Niet genoeg balans
-                            const retObj = {
+                            // Foute pincode
+                            res.status(401).send({
                                 'head': {
                                     'fromCtry': 'MK',
                                     'fromBank': 'BANQ',
                                     'toCtry': req.body.head.fromCtry,
                                     'toBank': req.body.head.fromBank
                                 },
-                                'body': {
-                                    'success': false,
-                                    'acctNo': req.body.body.acctNo,
-                                    'balance': result[3].rekeningnummer
+                                'body':{
+                                    'attemptsLeft': 3 - result[2].rekeningnummer
                                 }
-                            };
-                            res.status(406).json(retObj);
+                            });
+                            con.query("UPDATE klanten_tabel SET pogingen = pogingen + 1 WHERE rekeningnummer = ?;", [req.body.body.acctNo])
                         }
                     }
                     else{
-                        // Foute pincode
-                        res.status(401).send({
+                        // Pas is geblokeerd
+                        res.status(403).send({
                             'head': {
                                 'fromCtry': 'MK',
                                 'fromBank': 'BANQ',
@@ -247,15 +252,14 @@ app.post('/api/withdraw', (req, res) => {
                                 'toBank': req.body.head.fromBank
                             },
                             'body':{
-                                'attemptsLeft': 3 - result[2].rekeningnummer
+                                'msg': 'Iets ging fout'
                             }
                         });
-                        con.query("UPDATE klanten_tabel SET pogingen = pogingen + 1 WHERE rekeningnummer = ?;", [req.body.body.acctNo])
                     }
                 }
                 else{
-                    // Pas is geblokeerd
-                    res.status(403).send({
+                    // Rekeningnummer bestaat niet
+                    res.status(404).send({
                         'head': {
                             'fromCtry': 'MK',
                             'fromBank': 'BANQ',
@@ -267,32 +271,29 @@ app.post('/api/withdraw', (req, res) => {
                         }
                     });
                 }
-            }
-            else{
-                // Rekeningnummer bestaat niet
-                res.status(404).send({
-                    'head': {
-                        'fromCtry': 'MK',
-                        'fromBank': 'BANQ',
-                        'toCtry': req.body.head.fromCtry,
-                        'toBank': req.body.head.fromBank
-                    },
-                    'body':{
-                        'msg': 'Iets ging fout'
-                    }
-                });
-            }
-        });
+            });
+        }
+        else{
+            console.log("Verzoek gaat naar de landserver");
+            sendRequest(req.body, "withdraw", function(success, code, result) {
+                console.log(result);
+                res.status(code).send(result);
+            });
+        }
     }
     else{
-        console.log("Verzoek gaat naar de landserver");
-        // console.log('bank1');
-        // console.log(req.body.head);
-        sendRequest(req.body, "withdraw", function(success, code, result) {
-            // console.log('bank5');
-            console.log(result);
-		    res.status(code).send(result);
-	 	});
+        // Bedrag was niet goed
+        res.status(400).send({
+            'head': {
+                'fromCtry': 'MK',
+                'fromBank': 'BANQ',
+                'toCtry': req.body.head.fromCtry,
+                'toBank': req.body.head.fromBank
+            },
+            'body':{
+                'msg': 'Iets ging fout'
+            }
+        });
     }
 });
 
